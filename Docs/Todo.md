@@ -1,5 +1,9 @@
 # TODO 
-### Understand code:
+#### Understand code:
+```
+Var ska vad skrivas? 
+Hur ser det ut om du vill skapa en ny agent m.m.?
+```
 | People        | ✅/❌ |
 |---------------|-----|
 | Hieu    | ❌  |
@@ -7,7 +11,10 @@
 | Huy     | ❌  |
 | Thomas  | ❌  |
 
-### Understand the socket handling:
+#### Understand the socket handling:
+```
+Vad gör sockets i detta fallet?
+```
 | People        | ✅/❌ |
 |---------------|-----|
 | Hieu          | ❌  |
@@ -15,14 +22,25 @@
 | Huy           | ❌  |
 | Thomas        | ❌  |
 
-Completed the construction of the agents
+#### Completed the construction of the agents
+```
+Advanced Hand Evaluation
+ - Identify potential patterns like flush and such 
+```
 | Agents        | ✅/❌ | Assignee |
 |---------------|-------|-------|
 | Random Agent  | ✅   |  None |
-| Fixed Agent   | ❌   |  Hieu/Hiéu/Huy |
-| Reflex Agent  | ❌   |  Hieu/Hiéu/Huy |
+| Fixed Agent   | ❌   |  Hiéu |
+| Reflex Agent  | ❌   |  Hieu/Huy |
 | Memory Agent  | ❌   | Thomas |
 # Future
+#### Implement a Search Algorithm
+```
+Memory - Historical View
+Classify Agents
+Search Algorithm - Future View
+* Bluff and Deceptive play
+```
 | Agents        | ✅/❌ |
 |---------------|--------|
-| Trained Agent |   ❌  |
+| Learning Agent |   ❌  |
