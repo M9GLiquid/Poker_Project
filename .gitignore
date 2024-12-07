@@ -1,2 +1,5 @@
 /AI_poker_project.pdf
+PokerClientRandom/__pycache__/
 PokerClientFixed/__pycache__/
+PokerClientReflex/__pycache__/
+PokerClientMemory/__pycache__/
