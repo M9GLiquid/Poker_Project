@@ -91,14 +91,7 @@ def queryCallRaiseAction(_maximumBet, _minimumAmountToRaiseTo, _playersCurrentBe
         2: ClientBase.BettingAnswer.ACTION_CALL if _playersCurrentBet + _playersRemainingChips > _maximumBet else ClientBase.BettingAnswer.ACTION_FOLD
     }.get(random.randint(0, 3), chooseRaiseOrFold())
 
-'''
-* Modify queryCardsToThrow() and add your strategy to throw cards
-* Called during the draw phase of the game when the player is offered to throw away some
-* (possibly all) of the cards on hand in exchange for new.
-* @return  An array of the cards on hand that should be thrown away in exchange for new,
-*          or <code>null</code> or an empty array to keep all cards.
-* @see     #infoCardsInHand(ca.ualberta.cs.poker.Hand)
-'''
+# Decide which cards to discard during the draw phase
 def queryCardsToThrow(_hand):
     print("Requested information about what cards to throw")
     print(_hand)
@@ -106,118 +99,63 @@ def queryCardsToThrow(_hand):
 
 # InfoFunction:
 
-'''
-* Called when a new round begins.
-* @param round the round number (increased for each new round).
-'''
+# Print round start information
 def infoNewRound(_round):
     #_nrTimeRaised = 0
     print('Starting Round: ' + _round )
 
-'''
-* Called when the poker server informs that the game is completed.
-'''
+# Print game over message
 def infoGameOver():
     print('The game is over.')
 
-'''
-* Called when the server informs the players how many chips a player has.
-* @param playerName    the name of a player.
-* @param chips         the amount of chips the player has.
-'''
+# Print the chips information for a player
 def infoPlayerChips(_playerName, _chips):
     print('The player ' + _playerName + ' has ' + _chips + 'chips')
 
-'''
-* Called when the ante has changed.
-* @param ante  the new value of the ante.
-'''
+# Print ante change information
 def infoAnteChanged(_ante):
     print('The ante is: ' + _ante)
 
-'''
-* Called when a player had to do a forced bet (putting the ante in the pot).
-* @param playerName    the name of the player forced to do the bet.
-* @param forcedBet     the number of chips forced to bet.
-'''
+# Print forced bet information for a player
 def infoForcedBet(_playerName, _forcedBet):
     print("Player "+ _playerName +" made a forced bet of "+ _forcedBet + " chips.")
 
-
-'''
-* Called when a player opens a betting round.
-* @param playerName        the name of the player that opens.
-* @param openBet           the amount of chips the player has put into the pot.
-'''
+# Print player open action information
 def infoPlayerOpen(_playerName, _openBet):
     print("Player "+ _playerName + " opened, has put "+ _openBet +" chips into the pot.")
 
-'''
-* Called when a player checks.
-* @param playerName        the name of the player that checks.
-'''
+# Print player check action information
 def infoPlayerCheck(_playerName):
     print("Player "+ _playerName +" checked.")
 
-'''
-* Called when a player raises.
-* @param playerName        the name of the player that raises.
-* @param amountRaisedTo    the amount of chips the player raised to.
-'''
+# Print player raise action information
 def infoPlayerRise(_playerName, _amountRaisedTo):
     print("Player "+_playerName +" raised to "+ _amountRaisedTo+ " chips.")
 
-'''
-* Called when a player calls.
-* @param playerName        the name of the player that calls.
-'''
+# Print player call action information
 def infoPlayerCall(_playerName):
     print("Player "+_playerName +" called.")
 
-'''
-* Called when a player folds.
-* @param playerName        the name of the player that folds.
-'''
+# Print player fold action information
 def infoPlayerFold(_playerName):
     print("Player "+ _playerName +" folded.")
 
-'''
-* Called when a player goes all-in.
-* @param playerName        the name of the player that goes all-in.
-* @param allInChipCount    the amount of chips the player has in the pot and goes all-in with.
-'''
+# Print player all-in action information
 def infoPlayerAllIn(_playerName, _allInChipCount):
     print("Player "+_playerName +" goes all-in with a pot of "+_allInChipCount+" chips.")
 
-'''
-* Called when a player has exchanged (thrown away and drawn new) cards.
-* @param playerName        the name of the player that has exchanged cards.
-* @param cardCount         the number of cards exchanged.
-'''
+# Print player card exchange information
 def infoPlayerDraw(_playerName, _cardCount):
     print("Player "+ _playerName + " exchanged "+ _cardCount +" cards.")
 
-'''
-* Called during the showdown when a player shows his hand.
-* @param playerName        the name of the player whose hand is shown.
-* @param hand              the players hand.
-'''
+# Print player hand information during showdown
 def infoPlayerHand(_playerName, _hand):
     print("Player "+ _playerName +" hand " + str(_hand))
 
-'''
-* Called during the showdown when a players undisputed win is reported.
-* @param playerName    the name of the player whose undisputed win is anounced.
-* @param winAmount     the amount of chips the player won.
-'''
+# Print undisputed win information during showdown
 def infoRoundUndisputedWin(_playerName, _winAmount):
     print("Player "+ _playerName +" won "+ _winAmount +" chips undisputed.")
 
-'''
-* Called during the showdown when a players win is reported. If a player does not win anything,
-* this method is not called.
-* @param playerName    the name of the player whose win is anounced.
-* @param winAmount     the amount of chips the player won.
-'''
+# Print round result information
 def infoRoundResult(_playerName, _winAmount):
     print("Player "+ _playerName +" won " + _winAmount + " chips.")
