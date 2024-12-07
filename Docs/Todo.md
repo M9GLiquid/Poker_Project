@@ -31,7 +31,8 @@ Advanced Hand Evaluation
 |---------------|-------|-------|
 | Random Agent  | ✅   |  None |
 | Fixed Agent   | ❌   |  Hiéu |
-| Reflex Agent  | ❌   |  Hieu/Huy |
+| Reflex Agent  | ❌   |  Hieu |
+| ALL-IN Agent  | ❌   |  Huy |
 | Memory Agent  | ❌   | Thomas |
 # Future
 #### Implement a Search Algorithm
