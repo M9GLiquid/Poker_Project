@@ -30,7 +30,7 @@ def queryPlayerName(_name):
         _name = POKER_CLIENT_NAME
     return _name
 
-def evaluateHandStrength(hand_):
+def evaluate(hand_):
     pass
 
 '''
@@ -48,13 +48,14 @@ def evaluateHandStrength(hand_):
 *                              and the players total amount of chips (the amount of chips alrady put into
 *                              pot plus the remaining amount of chips).
 '''
+
 def queryOpenAction(_minimumPotAfterOpen, _playersCurrentBet, _playersRemainingChips):
     """
     Decide the agent's opening action based on hand strength.
     """
     print("Player requested to choose an opening action.")
 
-    hand_type = evaluateHandStrength(CURRENT_HAND)  # Returns a string like "Straight", "Flush", etc.
+    hand_type = evaluate(CURRENT_HAND)  # Returns a string like "Straight", "Flush", etc.
 
     # Find the probability for the hand type
     hand_probability = next(
@@ -64,7 +65,7 @@ def queryOpenAction(_minimumPotAfterOpen, _playersCurrentBet, _playersRemainingC
 
     # Raise an error if hand type is invalid
     if hand_probability is None:
-        raise ValueError(f"Invalid hand type returned by evaluateHandStrength: {hand_type}")
+        raise ValueError(f"Invalid hand type returned by evaluate: {hand_type}")
 
     # Step 2: Reflex decision rules based on hand probability
     if hand_probability < 0.3:  # Weak hand
@@ -114,7 +115,7 @@ def queryCallRaiseAction(_maximumBet, _minimumAmountToRaiseTo, _playersCurrentBe
     print("Player requested to choose a call/raise action.")
 
     # Step 1: Assess hand strength and retrieve probability
-    hand_type = evaluateHandStrength(CURRENT_HAND)  # Returns a string like "Straight", "Flush", etc.
+    hand_type = evaluate(CURRENT_HAND)  # Returns a string like "Straight", "Flush", etc.
 
     # Find the probability for the hand type
     hand_probability = next(
@@ -124,7 +125,7 @@ def queryCallRaiseAction(_maximumBet, _minimumAmountToRaiseTo, _playersCurrentBe
 
     # Raise an error if hand type is invalid
     if hand_probability is None:
-        raise ValueError(f"Invalid hand type returned by evaluateHandStrength: {hand_type}")
+        raise ValueError(f"Invalid hand type returned by evaluate: {hand_type}")
 
     # Step 2: Reflex decision rules based on hand probability
     if hand_probability < 0.3:  # Weak hand
