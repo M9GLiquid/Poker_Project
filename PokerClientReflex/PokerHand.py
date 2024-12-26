@@ -1,6 +1,7 @@
 from enum import Enum
 from collections import Counter
 from ClientBase import Card
+from Client import *
 
 class PokerHand(Enum):
   STRAIGHT_FLUSH = ("Straight Flush", 0.0015)

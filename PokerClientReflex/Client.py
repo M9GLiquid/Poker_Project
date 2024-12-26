@@ -55,13 +55,11 @@ def queryOpenAction(_minimumPotAfterOpen, _playersCurrentBet, _playersRemainingC
     print("Player requested to choose an opening action.")
 
     # Step 1: Assess hand strength and retrieve probability
-    hand_type = evaluate(CURRENT_HAND)  # Returns a string like "Straight", "Flush", etc.
+    hand = evaluate(CURRENT_HAND)
+    hand_type = hand[0] # Returns a string like "Straight", "Flush", etc.
 
     # Find the probability for the hand type
-    hand_probability = next(
-        (hand.probability for hand in PokerHand if hand.hand_name == hand_type),
-        None  # Default to None if no match is found
-    )
+    hand_probability = hand[1] 
 
     # Raise an error if hand type is invalid
     if hand_probability is None:
@@ -115,13 +113,9 @@ def queryCallRaiseAction(_maximumBet, _minimumAmountToRaiseTo, _playersCurrentBe
     print("Player requested to choose a call/raise action.")
 
     # Step 1: Assess hand strength and retrieve probability
-    hand_type = evaluate(CURRENT_HAND)  # Returns a string like "Straight", "Flush", etc.
-
-    # Find the probability for the hand type
-    hand_probability = next(
-        (hand.probability for hand in PokerHand if hand.hand_name == hand_type),
-        None  # Default to None if no match is found
-    )
+    hand = evaluate(CURRENT_HAND)
+    hand_type = hand[0] # Returns a string like "Straight", "Flush", etc.
+    hand_probability = hand[1] # Find the probability for the hand type
 
     # Raise an error if hand type is invalid
     if hand_probability is None:
