@@ -1,7 +1,6 @@
 import random
 import ClientBase
-from itertools import combinations
-from PokerHand import PokerHand
+from PokerHand import PokerHand, evaluate
 
 
 
@@ -32,8 +31,6 @@ def queryPlayerName(_name):
         _name = POKER_CLIENT_NAME
     return _name
 
-def evaluate(hand_):
-    pass
 
 '''
 * Modify queryOpenAction() and add your strategy here
