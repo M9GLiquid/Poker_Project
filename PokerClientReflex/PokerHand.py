@@ -11,12 +11,13 @@ class PokerHand(Enum):
   ONE_PAIR = ("One Pair", 42.26)
   HIGH_CARD = ("High Card", 50.12)
 
-  def __init__(self, name, probability):
-    self.name = name
+  def __init__(self, hand_name, probability):
+    self.hand_name = hand_name
     self.probability = probability
 
+
   def __str__(self):
-    return f"{self.name}: {self.probability}%"
+    return f"{self.hand_name}: {self.probability}%"
 
 # Example Usage
 for hand in PokerHand:

@@ -1,5 +1,9 @@
 import random
 import ClientBase
+from itertools import combinations
+from PokerHand import PokerHand
+
+
 
 # IP address and port
 TCP_IP = '127.0.0.1'
@@ -18,11 +22,16 @@ class pokerGames(object):
         self.Ante = 0
         self.playersCurrentBet = 0
 
+
+
 # Get the player's name, default to POKER_CLIENT_NAME if none is provided
 def queryPlayerName(_name):
     if _name is None:
         _name = POKER_CLIENT_NAME
     return _name
+
+def evaluateHandStrength(hand_):
+    pass
 
 '''
 * Modify queryOpenAction() and add your strategy here
@@ -76,20 +85,48 @@ def queryOpenAction(_minimumPotAfterOpen, _playersCurrentBet, _playersRemainingC
 *                                  puts into the pot and must be between <code>minimumAmountToRaiseTo</code> and
 *                                  <code>playersCurrentBet+playersRemainingChips</code>.
 '''
+
 def queryCallRaiseAction(_maximumBet, _minimumAmountToRaiseTo, _playersCurrentBet, _playersRemainingChips):
+    """
+    Decides the agent's action during the call/raise phase based on the probability of the current hand's strength.
+    """
     print("Player requested to choose a call/raise action.")
-    # Random Open Action
-    def chooseRaiseOrFold():
-        if  _playersCurrentBet + _playersRemainingChips > _minimumAmountToRaiseTo:
-            return ClientBase.BettingAnswer.ACTION_RAISE,  (random.randint(0, 10) + _minimumAmountToRaiseTo) if _playersCurrentBet+ _playersRemainingChips + 10 > _minimumAmountToRaiseTo else _minimumAmountToRaiseTo
+
+    # Step 1: Assess hand strength and retrieve probability
+    hand_type = evaluateHandStrength(CURRENT_HAND)  # Returns a string like "Straight", "Flush", etc.
+
+    # Find the probability for the hand type
+    hand_probability = next(
+        (hand.probability for hand in PokerHand if hand.hand_name == hand_type),
+        None  # Default to None if no match is found
+    )
+
+    # Raise an error if hand type is invalid
+    if hand_probability is None:
+        raise ValueError(f"Invalid hand type returned by evaluateHandStrength: {hand_type}")
+
+    # Step 2: Reflex decision rules based on hand probability
+    if hand_probability < 0.3:  # Weak hand
+        return ClientBase.BettingAnswer.ACTION_FOLD
+
+    if 0.3 <= hand_probability < 0.7:  # Moderate hand
+        if _playersCurrentBet + _playersRemainingChips >= _maximumBet:
+            return ClientBase.BettingAnswer.ACTION_CALL
         else:
             return ClientBase.BettingAnswer.ACTION_FOLD
-    return {
-        0: ClientBase.BettingAnswer.ACTION_FOLD,
-        #1: ClientBase.BettingAnswer.ACTION_ALLIN,
-        1: ClientBase.BettingAnswer.ACTION_FOLD,
-        2: ClientBase.BettingAnswer.ACTION_CALL if _playersCurrentBet + _playersRemainingChips > _maximumBet else ClientBase.BettingAnswer.ACTION_FOLD
-    }.get(random.randint(0, 3), chooseRaiseOrFold())
+
+    if 0.7 <= hand_probability <= 0.9:  # Strong hand
+        raise_amount = min(_playersCurrentBet + 10, _playersRemainingChips, _maximumBet + _minimumAmountToRaiseTo)
+        if raise_amount > _minimumAmountToRaiseTo:
+            return ClientBase.BettingAnswer.ACTION_RAISE, raise_amount
+        else:
+            return ClientBase.BettingAnswer.ACTION_CALL
+
+    if hand_probability > 0.9:  # Very strong hand
+        return ClientBase.BettingAnswer.ACTION_ALLIN
+
+    # Default fallback
+    return ClientBase.BettingAnswer.ACTION_CALL
 
 '''
 * Modify queryCardsToThrow() and add your strategy to throw cards
