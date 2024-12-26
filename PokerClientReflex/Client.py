@@ -49,22 +49,43 @@ def evaluateHandStrength(hand_):
 *                              pot plus the remaining amount of chips).
 '''
 def queryOpenAction(_minimumPotAfterOpen, _playersCurrentBet, _playersRemainingChips):
+    """
+    Decide the agent's opening action based on hand strength.
+    """
     print("Player requested to choose an opening action.")
 
-    # Choose between open or check based on player state
-    def chooseOpenOrCheck():
-        if _playersCurrentBet + _playersRemainingChips > _minimumPotAfterOpen:
-            return ClientBase.BettingAnswer.ACTION_OPEN,  \
-                    (random.randint(0, 10) + _minimumPotAfterOpen) if \
-                        _playersCurrentBet + _playersRemainingChips + 10> _minimumPotAfterOpen else \
-                        _minimumPotAfterOpen
-        else:
-            return ClientBase.BettingAnswer.ACTION_CHECK
+    hand_type = evaluateHandStrength(CURRENT_HAND)  # Returns a string like "Straight", "Flush", etc.
 
-    return {
-        0: ClientBase.BettingAnswer.ACTION_CHECK,
-        1: ClientBase.BettingAnswer.ACTION_CHECK,
-    }.get(random.randint(0, 2), chooseOpenOrCheck())
+    # Find the probability for the hand type
+    hand_probability = next(
+        (hand.probability for hand in PokerHand if hand.hand_name == hand_type),
+        None  # Default to None if no match is found
+    )
+
+    # Raise an error if hand type is invalid
+    if hand_probability is None:
+        raise ValueError(f"Invalid hand type returned by evaluateHandStrength: {hand_type}")
+
+    # Step 2: Reflex decision rules based on hand probability
+    if hand_probability < 0.3:  # Weak hand
+        print(f"Hand is weak ({hand_type}). Choosing to CHECK.")
+        return ClientBase.BettingAnswer.ACTION_CHECK
+
+    if 0.3 <= hand_probability < 0.7:  # Moderate hand
+        print(f"Hand is moderate ({hand_type}). Opening with minimum bet.")
+        return ClientBase.BettingAnswer.ACTION_OPEN, max(_minimumPotAfterOpen, _playersCurrentBet + 10)
+
+    if 0.7 <= hand_probability <= 0.9:  # Strong hand
+        print(f"Hand is strong ({hand_type}). Opening with aggressive bet.")
+        return ClientBase.BettingAnswer.ACTION_OPEN, min(_playersRemainingChips, _minimumPotAfterOpen * 2)
+
+    if hand_probability > 0.9:  # Very strong hand
+        print(f"Hand is very strong ({hand_type}). Going ALL-IN.")
+        return ClientBase.BettingAnswer.ACTION_ALLIN
+
+    # Default fallback (this should rarely execute)
+    print("Default fallback triggered. Choosing to CHECK.")
+    return ClientBase.BettingAnswer.ACTION_CHECK
 
 '''
 * Modify queryCallRaiseAction() and add your strategy here
