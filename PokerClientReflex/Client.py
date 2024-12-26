@@ -11,8 +11,10 @@ TCP_PORT = 5000
 BUFFER_SIZE = 1024
 
 # Agent
-POKER_CLIENT_NAME = 'Memory'
+POKER_CLIENT_NAME = 'Reflex'
 CURRENT_HAND = []
+
+playerAllIn = False
 
 class pokerGames(object):
     def __init__(self):
@@ -50,11 +52,9 @@ def evaluate(hand_):
 '''
 
 def queryOpenAction(_minimumPotAfterOpen, _playersCurrentBet, _playersRemainingChips):
-    """
-    Decide the agent's opening action based on hand strength.
-    """
     print("Player requested to choose an opening action.")
 
+    # Step 1: Assess hand strength and retrieve probability
     hand_type = evaluate(CURRENT_HAND)  # Returns a string like "Straight", "Flush", etc.
 
     # Find the probability for the hand type
@@ -65,22 +65,22 @@ def queryOpenAction(_minimumPotAfterOpen, _playersCurrentBet, _playersRemainingC
 
     # Raise an error if hand type is invalid
     if hand_probability is None:
-        raise ValueError(f"Invalid hand type returned by evaluate: {hand_type}")
+        raise ValueError(f"Invalid hand type returned by evaluateHandStrength: {hand_type}")
 
     # Step 2: Reflex decision rules based on hand probability
-    if hand_probability < 0.3:  # Weak hand
+    if hand_probability > 40:  # Weak hand (High Card, One Pair)
         print(f"Hand is weak ({hand_type}). Choosing to CHECK.")
         return ClientBase.BettingAnswer.ACTION_CHECK
 
-    if 0.3 <= hand_probability < 0.7:  # Moderate hand
+    if 5 < hand_probability <= 40:  # Moderate hand (Two Pair, Three of a Kind)
         print(f"Hand is moderate ({hand_type}). Opening with minimum bet.")
         return ClientBase.BettingAnswer.ACTION_OPEN, max(_minimumPotAfterOpen, _playersCurrentBet + 10)
 
-    if 0.7 <= hand_probability <= 0.9:  # Strong hand
+    if 1 <= hand_probability <= 5:  # Strong hand (Straight, Flush)
         print(f"Hand is strong ({hand_type}). Opening with aggressive bet.")
         return ClientBase.BettingAnswer.ACTION_OPEN, min(_playersRemainingChips, _minimumPotAfterOpen * 2)
 
-    if hand_probability > 0.9:  # Very strong hand
+    if hand_probability < 1:  # Very strong hand (Full House, Four of a Kind, Straight Flush)
         print(f"Hand is very strong ({hand_type}). Going ALL-IN.")
         return ClientBase.BettingAnswer.ACTION_ALLIN
 
@@ -110,7 +110,7 @@ def queryOpenAction(_minimumPotAfterOpen, _playersCurrentBet, _playersRemainingC
 
 def queryCallRaiseAction(_maximumBet, _minimumAmountToRaiseTo, _playersCurrentBet, _playersRemainingChips):
     """
-    Decides the agent's action during the call/raise phase based on the probability of the current hand's strength.
+    Decide the agent's action during the call/raise phase based on detailed hand strength and probabilities.
     """
     print("Player requested to choose a call/raise action.")
 
@@ -125,30 +125,49 @@ def queryCallRaiseAction(_maximumBet, _minimumAmountToRaiseTo, _playersCurrentBe
 
     # Raise an error if hand type is invalid
     if hand_probability is None:
-        raise ValueError(f"Invalid hand type returned by evaluate: {hand_type}")
+        raise ValueError(f"Invalid hand type returned by evaluateHandStrength: {hand_type}")
 
-    # Step 2: Reflex decision rules based on hand probability
-    if hand_probability < 0.3:  # Weak hand
+    # Step 2: Reflex decision rules based on detailed hand type
+    if hand_type == "High Card" or hand_type == "One Pair":
+        # Weak hands
+        print(f"Hand is weak ({hand_type}). Choosing to FOLD.")
         return ClientBase.BettingAnswer.ACTION_FOLD
 
-    if 0.3 <= hand_probability < 0.7:  # Moderate hand
-        if _playersCurrentBet + _playersRemainingChips >= _maximumBet:
-            return ClientBase.BettingAnswer.ACTION_CALL
-        else:
+    elif hand_type == "Two Pair" or hand_type == "Three of a Kind":
+        # Moderate hands
+        if playerAllIn:
             return ClientBase.BettingAnswer.ACTION_FOLD
+        else:
+            print(f"Hand is moderate ({hand_type}). Choosing to CALL.")
+            if _playersCurrentBet + _playersRemainingChips >= _maximumBet:
+                return ClientBase.BettingAnswer.ACTION_CALL
+            else:
+                return ClientBase.BettingAnswer.ACTION_FOLD
 
-    if 0.7 <= hand_probability <= 0.9:  # Strong hand
+    elif hand_type == "Straight" or hand_type == "Flush":
+        # Strong hands
+        print(f"Hand is strong ({hand_type}). Choosing to RAISE.")
         raise_amount = min(_playersCurrentBet + 10, _playersRemainingChips, _maximumBet + _minimumAmountToRaiseTo)
         if raise_amount > _minimumAmountToRaiseTo:
             return ClientBase.BettingAnswer.ACTION_RAISE, raise_amount
         else:
             return ClientBase.BettingAnswer.ACTION_CALL
 
-    if hand_probability > 0.9:  # Very strong hand
+    elif hand_type == "Full House" or hand_type == "Four of a Kind":
+        # Very strong hands
+        print(f"Hand is very strong ({hand_type}). Choosing to RAISE aggressively.")
+        raise_amount = min(_playersRemainingChips, _maximumBet + _minimumAmountToRaiseTo * 2)
+        return ClientBase.BettingAnswer.ACTION_RAISE, raise_amount
+
+    elif hand_type == "Straight Flush":
+        # Extremely strong hand
+        print(f"Hand is extremely strong ({hand_type}). Going ALL-IN.")
         return ClientBase.BettingAnswer.ACTION_ALLIN
 
-    # Default fallback
-    return ClientBase.BettingAnswer.ACTION_CALL
+    # Default fallback (this should rarely execute)
+    print("Default fallback triggered. Choosing to FOLD.")
+    return ClientBase.BettingAnswer.ACTION_FOLD
+
 
 '''
 * Modify queryCardsToThrow() and add your strategy to throw cards
@@ -246,6 +265,8 @@ def infoPlayerFold(_playerName):
 * @param allInChipCount    the amount of chips the player has in the pot and goes all-in with.
 '''
 def infoPlayerAllIn(_playerName, _allInChipCount):
+    if _playerName != "Reflex":
+        playerAllIn = True
     print("Player "+_playerName +" goes all-in with a pot of "+_allInChipCount+" chips.")
 
 '''
