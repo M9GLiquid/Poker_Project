@@ -1,6 +1,5 @@
 from collections import Counter
-from PokerHand import PokerHand
-from ClientBase import Card
+from ClientBase import Card, BettingAnswer as ACTION
 
 from enum import Enum
 
@@ -16,11 +15,24 @@ class PokerHand(Enum):
   HIGH_CARD = ("High Card", 50.12)
 
   def __init__(self, name, probability):
-    self.name = name
+    self.hand_name = name
     self.probability = probability
 
   def __str__(self):
     return f"{self.name}: {self.probability}%"
+
+class OpponentStrategy(Enum):
+    CONSERVATIVE = "Conservative"
+    AGGRESSIVE = "Aggressive"
+    BLUFFER = "Bluffer"
+    RISK_TAKER = "Risk-Taker"
+    PASSIVE = "Passive"
+    NON_ADAPTABLE = "Non-Adaptable"
+    OPPORTUNISTIC = "Opportunistic"
+    SHOWDOWN_ORIENTED = "Showdown-Oriented"
+    CAUTIOUS_CALLER = "Cautious Caller"
+    BALANCED = "Balanced"
+    UNKNOWN = "Unknown"
 
 # Evaluate a poker hand
 def evaluate(hand):
@@ -48,7 +60,7 @@ def evaluate(hand):
         return PokerHand.STRAIGHT_FLUSH
     if 4 in rank_counts.values():
         return PokerHand.FOUR_OF_A_KIND
-    if 3 in rank_counts.values() and 2 in rank_counts.values():
+    if sorted(rank_counts.values()) == [2, 3]:
         return PokerHand.FULL_HOUSE
     if is_flush:
         return PokerHand.FLUSH
@@ -63,3 +75,40 @@ def evaluate(hand):
 
     # Default to high card
     return PokerHand.HIGH_CARD
+
+def deduceOpponentStrategy(opponentActions, showdownHands):
+    actions = opponentActions
+
+    if not actions:
+        return OpponentStrategy.UNKNOWN
+
+    totalActions = len(actions)
+    foldCount = sum(1 for action in actions if action['action'] == ACTION.FOLD)
+    betCount = sum(1 for action in actions if action['action'] == 'Bet')
+    raiseCount = sum(1 for action in actions if action['action'] == 'Raise')
+    checkCount = sum(1 for action in actions if action['action'] == 'Check')
+    callCount = sum(1 for action in actions if action['action'] == 'Call')
+    cardExchangeCount = sum(1 for action in actions if action.get('cardExchange', 0) > 0)
+    showdownCount = len(showdownHands)
+
+    # Deduce strategy based on the patterns of actions
+    if foldCount / totalActions > 0.5:
+        return OpponentStrategy.CONSERVATIVE
+    elif raiseCount / totalActions > 0.4:
+        return OpponentStrategy.AGGRESSIVE
+    elif betCount > raiseCount and checkCount > callCount:
+        return OpponentStrategy.PASSIVE
+    elif showdownCount > 0 and all(hand == PokerHand.HIGH_CARD for hand in showdownHands):
+        return OpponentStrategy.BLUFFER
+    elif betCount > 0 and foldCount == 0:
+        return OpponentStrategy.RISK_TAKER
+    elif cardExchangeCount == 0 and totalActions > 0:
+        return OpponentStrategy.NON_ADAPTABLE
+    elif all(action['action'] == 'Raise' for action in actions if action['action'] == 'Raise') and checkCount > 0:
+        return OpponentStrategy.OPPORTUNISTIC
+    elif showdownCount == totalActions:
+        return OpponentStrategy.SHOWDOWN_ORIENTED
+    elif betCount > 0 and raiseCount == 0 and callCount / totalActions > 0.6:
+        return OpponentStrategy.CAUTIOUS_CALLER
+
+    return OpponentStrategy.BALANCED

@@ -1,7 +1,5 @@
 from collections import Counter
-import random
-import ClientBase
-from ClientBase import Card, BettingAnswer
+from ClientBase import Card, BettingAnswer as ACTION
 import PokerHand
 
 # IP address and port
@@ -24,6 +22,7 @@ class pokerGames(object):
         # Memory for tracking opponents
         self.opponentActions = {}  # Track actions for each opponent
         self.showdownHands = {}   # Track hands revealed at showdown
+        self.cardsThrown = {}   # Track card exchanges
 
 # Get the player's name, default to POKER_CLIENT_NAME if none is provided
 def queryPlayerName(_name):
@@ -34,83 +33,82 @@ def queryPlayerName(_name):
 # Initialize the Memory Agent
 agent = pokerGames()
 
-'''
-* Modify queryOpenAction() and add your strategy here
-* Called during the betting phases of the game when the player needs to decide what open
-* action to choose.
-* @param minimumPotAfterOpen   the total minimum amount of chips to put into the pot if the answer action is
-*                              {@link BettingAnswer#ACTION_OPEN}.
-* @param playersCurrentBet     the amount of chips the player has already put into the pot (dure to the forced bet).
-* @param playersRemainingChips the number of chips the player has not yet put into the pot.
-* @return                      An answer to the open query. The answer action must be one of
-*                              {@link BettingAnswer#ACTION_OPEN}, {@link BettingAnswer#ACTION_ALLIN} or
-*                              {@link BettingAnswer#ACTION_CHECK }. If the action is open, the answers
-*                              amount of chips in the anser must be between <code>minimumPotAfterOpen</code>
-*                              and the players total amount of chips (the amount of chips alrady put into
-*                              pot plus the remaining amount of chips).
-'''
-def queryOpenAction(_minimumPotAfterOpen, _playersCurrentBet, _playersRemainingChips):
+# Handle the start of a new round
+def queryOpenAction(
+        _minimumPotAfterOpen, _playersCurrentBet, _playersRemainingChips):
     print("Player requested to choose an opening action.")
+    opponentStrategies = {
+        opponent: PokerHand.deduceOpponentStrategy(agent.opponentActions.get(opponent, []),
+                                                   agent.showdownHands.get(opponent, []))
+        for opponent in agent.opponentActions
+    }
 
-    # Choose between open or check based on player state
-    def chooseOpenOrCheck():
-        if _playersCurrentBet + _playersRemainingChips > _minimumPotAfterOpen:
-            return BettingAnswer.ACTION_OPEN,  \
-                    (random.randint(0, 10) + _minimumPotAfterOpen) if \
-                        _playersCurrentBet + _playersRemainingChips + 10> _minimumPotAfterOpen else \
-                        _minimumPotAfterOpen
-        else:
-            return BettingAnswer.ACTION_CHECK
+    # Calculate how much more is required to meet the minimum pot
+    additionalBetRequired = _minimumPotAfterOpen - _playersCurrentBet
 
-    return {
-        0: BettingAnswer.ACTION_CHECK,
-        1: BettingAnswer.ACTION_CHECK,
-    }.get(random.randint(0, 2), chooseOpenOrCheck())
+    # Ensure the agent can afford the bet
+    if additionalBetRequired > _playersRemainingChips:
+        print(
+            f"Insufficient chips to open: Needed {_minimumPotAfterOpen}, "
+            f"Available {_playersRemainingChips}. Checking instead."
+        )
+        return ACTION.ACTION_CHECK
 
-'''
-* Modify queryCallRaiseAction() and add your strategy here
-* Called during the betting phases of the game when the player needs to decide what call/raise
-* action to choose.
-* @param maximumBet                the maximum number of chips one player has already put into the pot.
-* @param minimumAmountToRaiseTo    the minimum amount of chips to bet if the returned answer is {@link BettingAnswer#ACTION_RAISE}.
-* @param playersCurrentBet         the number of chips the player has already put into the pot.
-* @param playersRemainingChips     the number of chips the player has not yet put into the pot.
-* @return                          An answer to the call or raise query. The answer action must be one of
-*                                  {@link BettingAnswer#ACTION_FOLD}, {@link BettingAnswer#ACTION_CALL},
-*                                  {@link BettingAnswer#ACTION_RAISE} or {@link BettingAnswer#ACTION_ALLIN }.
-*                                  If the players number of remaining chips is less than the maximum bet and
-*                                  the players current bet, the call action is not available. If the players
-*                                  number of remaining chips plus the players current bet is less than the minimum
-*                                  amount of chips to raise to, the raise action is not available. If the action
-*                                  is raise, the answers amount of chips is the total amount of chips the player
-*                                  puts into the pot and must be between <code>minimumAmountToRaiseTo</code> and
-*                                  <code>playersCurrentBet+playersRemainingChips</code>.
-'''
+    # Adjust based on chip levels
+    if _playersRemainingChips < _minimumPotAfterOpen * 2:
+        print("Low chip count: Playing conservatively.")
+        return ACTION.ACTION_CHECK
+    elif _playersRemainingChips > _minimumPotAfterOpen * 5:
+        print("High chip count: Playing aggressively.")
+        return ACTION.ACTION_OPEN
+
+    # Weight-based decision system
+    strategy_weights = {
+        PokerHand.OpponentStrategy.AGGRESSIVE: -2,
+        PokerHand.OpponentStrategy.PASSIVE: 3,
+        PokerHand.OpponentStrategy.BLUFFER: 1,
+        PokerHand.OpponentStrategy.RISK_TAKER: -1,
+        PokerHand.OpponentStrategy.SHOWDOWN_ORIENTED: 2,
+        PokerHand.OpponentStrategy.CONSERVATIVE: 1
+    }
+
+    total_weight = sum(
+        strategy_weights[strategy] * list(opponentStrategies.values()).count(strategy)
+        for strategy in strategy_weights
+    )
+
+    print(f"Total strategy weight: {total_weight}")
+
+    # Adjust behavior based on weighted strategies
+    if total_weight > 0:
+        print("Positive weight: Playing aggressively.")
+        return ACTION.ACTION_OPEN
+
+    print("Negative weight: Playing conservatively.")
+    return ACTION.ACTION_CHECK
+
+# Decide the call/raise action
 def queryCallRaiseAction(_maximumBet, _minimumAmountToRaiseTo, _playersCurrentBet, _playersRemainingChips):
     print("Player requested to choose a call/raise action.")
-    # Random Open Action
-    def chooseRaiseOrFold():
-        if  _playersCurrentBet + _playersRemainingChips > _minimumAmountToRaiseTo:
-            return BettingAnswer.ACTION_RAISE,  (random.randint(0, 10) + _minimumAmountToRaiseTo) if _playersCurrentBet+ _playersRemainingChips + 10 > _minimumAmountToRaiseTo else _minimumAmountToRaiseTo
-        else:
-            return BettingAnswer.ACTION_FOLD
-    return {
-        0: BettingAnswer.ACTION_FOLD,
-        1: BettingAnswer.ACTION_FOLD,
-        2: BettingAnswer.ACTION_CALL if _playersCurrentBet + _playersRemainingChips > _maximumBet else BettingAnswer.ACTION_FOLD
-    }.get(random.randint(0, 3), chooseRaiseOrFold())
+    opponentStrategies = {opponent: PokerHand.deduceOpponentStrategy(opponent) for opponent in agent.opponentActions}
 
-'''
-* Modify queryCardsToThrow() and add your strategy to throw cards
-* Called during the draw phase of the game when the player is offered to throw away some
-* (possibly all) of the cards on hand in exchange for new.
-* @return  An array of the cards on hand that should be thrown away in exchange for new,
-*          or <code>null</code> or an empty array to keep all cards.
-* @see     #infoCardsInHand(ca.ualberta.cs.poker.Hand)
-'''
+    # Adjust behavior based on opponents
+    if PokerHand.OpponentStrategy.BLUFFER in opponentStrategies.values():
+        print("Opponent identified as a bluffer: Calling more frequently.")
+        return ACTION.ACTION_CALL
+    if PokerHand.OpponentStrategy.CONSERVATIVE in opponentStrategies.values():
+        print("Opponent identified as conservative: Avoiding unnecessary raises.")
+        return ACTION.ACTION_CHECK
+
+    # Default behavior
+    return ACTION.ACTION_RAISE
+    
+
+# Decide which cards to throw
 def queryCardsToThrow(_hand):
     print("Memory Agent: Deciding which cards to throw.")
     handStrength = PokerHand.evaluate(_hand)
+    # Memory Agent: Discard Action
 
     # Extract ranks and suits from the hand
     ranks = [card.rank for card in _hand]
@@ -134,21 +132,12 @@ def queryCardsToThrow(_hand):
         tripletRank = [rank for rank, count in rank_counts.items() if count == 3][0]
         return ' '.join(str(card) for card in _hand if card.rank != tripletRank)
 
-    elif handStrength == PokerHand.STRAIGHT or handStrength == PokerHand.STRAIGHT_FLUSH:
-        # Keep all cards; a straight cannot be improved by discarding
-        return ''
-
-    elif handStrength == PokerHand.FLUSH:
-        # Keep all cards; a flush cannot be improved by discarding
-        return ''
-
-    elif handStrength == PokerHand.FOUR_OF_A_KIND:
-        # Keep the four of a kind and discard the fifth card
-        quadRank = [rank for rank, count in rank_counts.items() if count == 4][0]
-        return ' '.join(str(card) for card in _hand if card.rank != quadRank)
-
-    elif handStrength == PokerHand.FULL_HOUSE:
-        # Full houses are already strong; keep all cards
+    elif handStrength == PokerHand.STRAIGHT or \
+            handStrength == PokerHand.STRAIGHT_FLUSH or \
+            handStrength == PokerHand.FLUSH or \
+            handStrength == PokerHand.FULL_HOUSE or \
+            handStrength == PokerHand.FOUR_OF_A_KIND:
+        # Keep all cards; these hands are already strong and cannot be improved.
         return ''
 
     elif handStrength == PokerHand.HIGH_CARD:
@@ -166,119 +155,3 @@ def queryCardsToThrow(_hand):
 
     # Default: Keep all cards if the hand is strong or cannot be improved
     return ''
-
-'''
-* Called when a new round begins.
-* @param round the round number (increased for each new round).
-'''
-def infoNewRound(_round):
-    #_nrTimeRaised = 0
-    print('Starting Round: ' + _round )
-
-'''
-* Called when the poker server informs that the game is completed.
-'''
-def infoGameOver():
-    print('The game is over.')
-
-'''
-* Called when the server informs the players how many chips a player has.
-* @param playerName    the name of a player.
-* @param chips         the amount of chips the player has.
-'''
-def infoPlayerChips(_playerName, _chips):
-    print('The player ' + _playerName + ' has ' + _chips + 'chips')
-
-'''
-* Called when the ante has changed.
-* @param ante  the new value of the ante.
-'''
-def infoAnteChanged(_ante):
-    print('The ante is: ' + _ante)
-
-'''
-* Called when a player had to do a forced bet (putting the ante in the pot).
-* @param playerName    the name of the player forced to do the bet.
-* @param forcedBet     the number of chips forced to bet.
-'''
-def infoForcedBet(_playerName, _forcedBet):
-    print("Player "+ _playerName +" made a forced bet of "+ _forcedBet + " chips.")
-
-
-'''
-* Called when a player opens a betting round.
-* @param playerName        the name of the player that opens.
-* @param openBet           the amount of chips the player has put into the pot.
-'''
-def infoPlayerOpen(_playerName, _openBet):
-    print("Player "+ _playerName + " opened, has put "+ _openBet +" chips into the pot.")
-
-'''
-* Called when a player checks.
-* @param playerName        the name of the player that checks.
-'''
-def infoPlayerCheck(_playerName):
-    print("Player "+ _playerName +" checked.")
-
-'''
-* Called when a player raises.
-* @param playerName        the name of the player that raises.
-* @param amountRaisedTo    the amount of chips the player raised to.
-'''
-def infoPlayerRise(_playerName, _amountRaisedTo):
-    print("Player "+_playerName +" raised to "+ _amountRaisedTo+ " chips.")
-
-'''
-* Called when a player calls.
-* @param playerName        the name of the player that calls.
-'''
-def infoPlayerCall(_playerName):
-    print(f"Player {_playerName} called.")
-
-'''
-* Called when a player folds.
-* @param playerName        the name of the player that folds.
-'''
-def infoPlayerFold(_playerName):
-    print("Player "+ _playerName +" folded.")
-
-'''
-* Called when a player goes all-in.
-* @param playerName        the name of the player that goes all-in.
-* @param allInChipCount    the amount of chips the player has in the pot and goes all-in with.
-'''
-def infoPlayerAllIn(_playerName, _allInChipCount):
-    print("Player "+_playerName +" goes all-in with a pot of "+_allInChipCount+" chips.")
-
-'''
-* Called when a player has exchanged (thrown away and drawn new) cards.
-* @param playerName        the name of the player that has exchanged cards.
-* @param cardCount         the number of cards exchanged.
-'''
-def infoPlayerDraw(_playerName, _cardCount):
-    print("Player "+ _playerName + " exchanged "+ _cardCount +" cards.")
-
-'''
-* Called during the showdown when a player shows his hand.
-* @param playerName        the name of the player whose hand is shown.
-* @param hand              the players hand.
-'''
-def infoPlayerHand(_playerName, _hand):
-    print("Player "+ _playerName +" hand " + str(_hand))
-
-'''
-* Called during the showdown when a players undisputed win is reported.
-* @param playerName    the name of the player whose undisputed win is anounced.
-* @param winAmount     the amount of chips the player won.
-'''
-def infoRoundUndisputedWin(_playerName, _winAmount):
-    print("Player "+ _playerName +" won "+ _winAmount +" chips undisputed.")
-
-'''
-* Called during the showdown when a players win is reported. If a player does not win anything,
-* this method is not called.
-* @param playerName    the name of the player whose win is anounced.
-* @param winAmount     the amount of chips the player won.
-'''
-def infoRoundResult(_playerName, _winAmount):
-    print("Player "+ _playerName +" won " + _winAmount + " chips.")

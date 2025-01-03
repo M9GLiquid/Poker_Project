@@ -1,6 +1,7 @@
 import socket
 
 from Client import *
+from ClientInfo import *
 
 iMsg = 0
 SIGNAL_ALIVE = ''#'==================ALIVE======================'
